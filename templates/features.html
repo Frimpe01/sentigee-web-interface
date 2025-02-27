@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Additional Features{% endblock %}
+
+{% block content %}
+<div x-data="{
+    activeFeature: 'none',
+    features: [
+        { 
+            id: 'ddns', 
+            name: 'Dynamic DNS (DDNS) Server', 
+            description: 'Host your own Dynamic DNS server to create and manage DNS entries dynamically.',
+            enabled: false,
+            status: 'Not Installed'
+        },
+        { 
+            id: 'ntp', 
+            name: 'NTP Server', 
+            description: 'Run your own Network Time Protocol server to synchronize time across your network devices.',
+            enabled: false,
+            status: 'Not Installed'
+        },
+        { 
+            id: 's2s', 
+            name: 'Site-to-Site VPN', 
+            description: 'Connect multiple networks securely over the internet using an encrypted tunnel.',
+            enabled: false,
+            status: 'Not Installed'
+        },
+        { 
+            id: 'p2s', 
+            name: 'Point-to-Site VPN', 
+            description: 'Allow remote users to securely connect to your network from anywhere.',
+            enabled: false,
+            status: 'Not Installed'
+        }
+    ],
+    
+    toggleFeature(feature) {
+        if (!feature.enabled && !confirm(`Are you sure you want to install the ${feature.name} feature?`)) {
+            return;
+        }
+        
+        if (feature.enabled && !confirm(`Are you sure you want to uninstall the ${feature.name} feature?`)) {
+            return;
+        }
+        
+        // In a real implementation, this would call an API to install/uninstall the feature
+        feature.enabled = !feature.enabled;
+        feature.status = feature.enabled ? 'Running' : 'Not Running';
+    },
+    
+    configureFeature(featureId) {
+        this.activeFeature = featureId;
+    }
+}">
+    <h1 class="text-2xl font-bold mb-6">Additional Features</h1>
+    
+    <div class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Available Features</h2>
+        <p class="mb-4 text-gray-600">Sentigee can be extended with additional networking features. Install and configure them below.</p>
+        
+        <div class="space-y-4">
+            <template x-for="feature in features" :key="feature.id">
+                <div class="border rounded-lg p-4 bg-white">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-medium" x-text="feature.name"></h3>
+                            <p class="text-gray-600" x-text="feature.description"></p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <span class="font-medium">Status: </span>
+                                <span x-text="feature.status" :class="feature.enabled ? 'text-green-600' : 'text-gray-600'"></span>
+                            </div>
+                            <button 
+                                @click="toggleFeature(feature)"
+                                :class="feature.enabled ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'"
+                                class="px-3 py-1 rounded-md font-medium">
+                                <span x-text="feature.enabled ? 'Uninstall' : 'Install'"></span>
+                            </button>
+                            <button 
+                                @click="configureFeature(feature.id)"
+                                class="px-3 py-1 rounded-md font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                :disabled="!feature.enabled"
+                                :class="!feature.enabled ? 'opacity-50 cursor-not-allowed' : ''">
+                                Configure
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+    
+    <!-- DDNS Configuration Section -->
+    <div x-show="activeFeature === 'ddns'" class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">DDNS Server Configuration</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg font-medium mb-2">Server Settings</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label" for="ddnsDomain">Base Domain</label>
+                        <input type="text" id="ddnsDomain" class="input" placeholder="example.com">
+                    </div>
+                    <div>
+                        <label class="label" for="ddnsPort">Port</label>
+                        <input type="number" id="ddnsPort" class="input" value="53">
+                    </div>
+                    <div>
+                        <label class="label" for="ddnsTtl">Default TTL</label>
+                        <input type="number" id="ddnsTtl" class="input" value="3600">
+                    </div>
+                    <div>
+                        <label class="label" for="ddnsUpdateInterval">Update Interval (seconds)</label>
+                        <input type="number" id="ddnsUpdateInterval" class="input" value="300">
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">DNS Records</h3>
+                <div class="mb-4">
+                    <table class="min-w-full border border-gray-200">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-2 px-4 border-b text-left">Hostname</th>
+                                <th class="py-2 px-4 border-b text-left">Type</th>
+                                <th class="py-2 px-4 border-b text-left">Value</th>
+                                <th class="py-2 px-4 border-b text-left">TTL</th>
+                                <th class="py-2 px-4 border-b text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="py-2 px-4 border-b">example.com</td>
+                                <td class="py-2 px-4 border-b">A</td>
+                                <td class="py-2 px-4 border-b">192.168.1.1</td>
+                                <td class="py-2 px-4 border-b">3600</td>
+                                <td class="py-2 px-4 border-b">
+                                    <button class="text-red-600 hover:text-red-800">Delete</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-4 border-b">www.example.com</td>
+                                <td class="py-2 px-4 border-b">CNAME</td>
+                                <td class="py-2 px-4 border-b">example.com</td>
+                                <td class="py-2 px-4 border-b">3600</td>
+                                <td class="py-2 px-4 border-b">
+                                    <button class="text-red-600 hover:text-red-800">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button class="btn-secondary">Add DNS Record</button>
+            </div>
+            
+            <div class="flex justify-end">
+                <button class="btn-secondary mr-2" @click="activeFeature = 'none'">Cancel</button>
+                <button class="btn">Save DDNS Configuration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NTP Server Configuration Section -->
+    <div x-show="activeFeature === 'ntp'" class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">NTP Server Configuration</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg font-medium mb-2">Server Settings</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label" for="ntpPort">Port</label>
+                        <input type="number" id="ntpPort" class="input" value="123">
+                    </div>
+                    <div>
+                        <label class="label" for="ntpStratum">Stratum Level</label>
+                        <input type="number" id="ntpStratum" class="input" value="2" min="1" max="15">
+                        <p class="text-sm text-gray-500 mt-1">Stratum level indicates how many hops away from a reference clock</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">Upstream NTP Servers</h3>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center">
+                        <input type="text" class="input mr-2" value="pool.ntp.org">
+                        <button class="text-red-600 hover:text-red-800">Remove</button>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="text" class="input mr-2" value="time.google.com">
+                        <button class="text-red-600 hover:text-red-800">Remove</button>
+                    </div>
+                </div>
+                
+                <button class="btn-secondary">Add Upstream Server</button>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">Access Control</h3>
+                <div class="space-y-2 mb-4">
+                    <div>
+                        <label class="label" for="ntpAllowedNetworks">Allowed Networks</label>
+                        <input type="text" id="ntpAllowedNetworks" class="input" value="10.0.0.0/8, 192.168.0.0/16">
+                        <p class="text-sm text-gray-500 mt-1">Comma-separated list of IP ranges in CIDR notation</p>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2" checked>
+                            <span>Allow all local networks</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button class="btn-secondary mr-2" @click="activeFeature = 'none'">Cancel</button>
+                <button class="btn">Save NTP Configuration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Site-to-Site VPN Configuration Section -->
+    <div x-show="activeFeature === 's2s'" class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Site-to-Site VPN Configuration</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg font-medium mb-2">General Settings</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label" for="s2sListenPort">Listen Port</label>
+                        <input type="number" id="s2sListenPort" class="input" value="51820">
+                    </div>
+                    <div>
+                        <label class="label" for="s2sProtocol">Protocol</label>
+                        <select id="s2sProtocol" class="input">
+                            <option value="wireguard">WireGuard</option>
+                            <option value="openvpn">OpenVPN</option>
+                            <option value="ipsec">IPsec</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label" for="s2sLocalSubnet">Local Subnet</label>
+                        <input type="text" id="s2sLocalSubnet" class="input" value="10.0.0.0/24">
+                    </div>
+                    <div>
+                        <label class="label" for="s2sInterface">Network Interface</label>
+                        <select id="s2sInterface" class="input">
+                            <option value="eth0">eth0 (Ethernet)</option>
+                            <option value="wlan0">wlan0 (Wireless)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">Remote Sites</h3>
+                <div class="mb-4">
+                    <table class="min-w-full border border-gray-200">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-2 px-4 border-b text-left">Site Name</th>
+                                <th class="py-2 px-4 border-b text-left">Remote Endpoint</th>
+                                <th class="py-2 px-4 border-b text-left">Remote Subnet</th>
+                                <th class="py-2 px-4 border-b text-left">Status</th>
+                                <th class="py-2 px-4 border-b text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="py-2 px-4 border-b">Branch Office</td>
+                                <td class="py-2 px-4 border-b">remote.example.com:51820</td>
+                                <td class="py-2 px-4 border-b">192.168.1.0/24</td>
+                                <td class="py-2 px-4 border-b"><span class="badge-success">Connected</span></td>
+                                <td class="py-2 px-4 border-b">
+                                    <button class="text-seafoam hover:text-seafoam-dark mr-2">Edit</button>
+                                    <button class="text-red-600 hover:text-red-800">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button class="btn-secondary">Add Remote Site</button>
+            </div>
+            
+            <div class="flex justify-end">
+                <button class="btn-secondary mr-2" @click="activeFeature = 'none'">Cancel</button>
+                <button class="btn">Save S2S Configuration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Point-to-Site VPN Configuration Section -->
+    <div x-show="activeFeature === 'p2s'" class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Point-to-Site VPN Configuration</h2>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg font-medium mb-2">Server Settings</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label" for="p2sPort">Port</label>
+                        <input type="number" id="p2sPort" class="input" value="1194">
+                    </div>
+                    <div>
+                        <label class="label" for="p2sProtocol">Protocol</label>
+                        <select id="p2sProtocol" class="input">
+                            <option value="udp">UDP</option>
+                            <option value="tcp">TCP</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label" for="p2sVpnSubnet">VPN Subnet</label>
+                        <input type="text" id="p2sVpnSubnet" class="input" value="10.8.0.0/24">
+                    </div>
+                    <div>
+                        <label class="label" for="p2sAuthentication">Authentication Method</label>
+                        <select id="p2sAuthentication" class="input">
+                            <option value="certificate">Certificate</option>
+                            <option value="username">Username/Password</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">Client Access</h3>
+                <div class="mb-4">
+                    <table class="min-w-full border border-gray-200">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-2 px-4 border-b text-left">Username</th>
+                                <th class="py-2 px-4 border-b text-left">IP Assignment</th>
+                                <th class="py-2 px-4 border-b text-left">Last Connected</th>
+                                <th class="py-2 px-4 border-b text-left">Status</th>
+                                <th class="py-2 px-4 border-b text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="py-2 px-4 border-b">remote_user</td>
+                                <td class="py-2 px-4 border-b">10.8.0.2</td>
+                                <td class="py-2 px-4 border-b">2025-02-26 15:42:30</td>
+                                <td class="py-2 px-4 border-b"><span class="badge-error">Disconnected</span></td>
+                                <td class="py-2 px-4 border-b">
+                                    <button class="text-seafoam hover:text-seafoam-dark mr-2">Edit</button>
+                                    <button class="text-red-600 hover:text-red-800">Delete</button>
+                                    <button class="text-blue-600 hover:text-blue-800 ml-2">Download Config</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button class="btn-secondary">Add VPN User</button>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">Advanced Options</h3>
+                <div class="space-y-2">
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2" checked>
+                            <span>Enable NAT for VPN clients</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2">
+                            <span>Redirect all client traffic through VPN</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2" checked>
+                            <span>Allow client-to-client communication</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button class="btn-secondary mr-2" @click="activeFeature = 'none'">Cancel</button>
+                <button class="btn">Save P2S Configuration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- No Feature Selected Section -->
+    <div x-show="activeFeature === 'none'" class="text-center py-8 bg-gray-50 rounded-lg">
+        <h3 class="text-lg font-medium text-gray-600">Select a feature to configure</h3>
+        <p class="text-gray-500">Click the Configure button next to an installed feature to manage its settings</p>
+    </div>
+</div>
+{% endblock %}
