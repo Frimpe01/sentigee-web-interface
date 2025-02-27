@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Mail Relay{% endblock %}
+
+{% block head %}
+<style>
+    .collapsible-section {
+        transition: all 0.3s ease-in-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="{
+    internetConnected: true,
+    tokenStatus: {
+        valid: false,
+        lastRefreshed: null,
+        lastAttempt: null,
+        nextAttempt: null,
+        result: 'Not configured',
+        user: null
+    },
+    mailRelayConfigured: false,
+    loading: true,
+    showAdminOptions: false,
+    mailboxType: 'primary',
+    sharedMailbox: '',
+    useAlias: false,
+    alias: '',
+    email: '',
+    testRecipient: '',
+    testSending: false,
+    tokenRefreshInterval: 60,
+    
+    init() {
+        this.fetchStatus();
+    },
+    
+    fetchStatus() {
+        this.loading = true;
+        fetch('/api/mail-relay/status')
+            .then(response => response.json())
+            .then(data => {
+                this.internetConnected = data.internet_connected;
+                this.tokenStatus = data.token_status;
+                this.mailRelayConfigured = data.mail_relay_configured;
+                this.loading = false;
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+                this.loading = false;
+            });
+    },
+    
+    configureRelay() {
+        const config = {
+            email: this.email,
+            shared_mailbox: this.sharedMailbox,
+            use_alias: this.useAlias,
+            alias: this.alias
+        };
+        
+        fetch('/api/mail-relay/configure', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // In a real implementation, this would redirect to Microsoft's OAuth page
+                alert(data.message);
+                this.fetchStatus();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error configuring relay:', error);
+            alert('Failed to configure mail relay. Please check console for details.');
+        });
+    },
+    
+    sendTestEmail() {
+        this.testSending = true;
+        fetch('/api/mail-relay/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ recipient: this.testRecipient })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+            } else {
+                alert('Error: ' + data.error);
+            }
+            this.testSending = false;
+        })
+        .catch(error => {
+            console.error('Error sending test email:', error);
+            alert('Failed to send test email. Please check console for details.');
+            this.testSending = false;
+        });
+    },
+    
+    revokeToken() {
+        if (!confirm('Are you sure you want to revoke this token? This will stop mail relay functionality.')) {
+            return;
+        }
+        
+        fetch('/api/mail-relay/revoke-token', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                this.fetchStatus();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error revoking token:', error);
+            alert('Failed to revoke token. Please check console for details.');
+        });
+    }
+}">
+    <h1 class="text-2xl font-bold mb-6">Mail Relay Configuration</h1>
+    
+    <!-- Status Panel -->
+    <div class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Status</h2>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+            <div>
+                <h3 class="text-lg font-medium mb-2">Connection Status</h3>
+                <div class="flex items-center">
+                    <span :class="internetConnected ? 'badge-success' : 'badge-error'" x-text="internetConnected ? 'Connected' : 'Disconnected'"></span>
+                    <span class="ml-2" x-text="internetConnected ? 'Internet connection available' : 'No internet connection'"></span>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">Mail Relay Status</h3>
+                <div class="flex items-center">
+                    <span :class="mailRelayConfigured ? 'badge-success' : 'badge-warning'" x-text="mailRelayConfigured ? 'Configured' : 'Not Configured'"></span>
+                </div>
+            </div>
+            
+            <!-- OAuth Token Status -->
+            <div class="md:col-span-2" x-show="tokenStatus.valid">
+                <h3 class="text-lg font-medium mb-2">OAuth Token Status</h3>
+                <div class="space-y-2">
+                    <div class="flex flex-wrap items-center">
+                        <span class="font-semibold w-40">Status:</span>
+                        <span :class="tokenStatus.valid ? 'badge-success' : 'badge-error'" x-text="tokenStatus.valid ? 'Valid' : 'Invalid'"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center">
+                        <span class="font-semibold w-40">User:</span>
+                        <span x-text="tokenStatus.user || 'Not available'"></span>
+                        <button @click="revokeToken" class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">Revoke</button>
+                    </div>
+                    <div class="flex flex-wrap items-center">
+                        <span class="font-semibold w-40">Last Refreshed:</span>
+                        <span x-text="tokenStatus.lastRefreshed || 'Never'"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center">
+                        <span class="font-semibold w-40">Last Attempt:</span>
+                        <span x-text="tokenStatus.lastAttempt || 'Never'"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center">
+                        <span class="font-semibold w-40">Result:</span>
+                        <span x-text="tokenStatus.result || 'Unknown'"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center">
+                        <span class="font-semibold w-40">Next Attempt:</span>
+                        <span x-text="tokenStatus.nextAttempt || 'Not scheduled'"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center mt-2">
+                        <span class="font-semibold w-40">Refresh Interval:</span>
+                        <input type="number" class="w-20 px-2 py-1 border rounded" x-model="tokenRefreshInterval">
+                        <span class="ml-2">minutes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Configuration Form -->
+    <div class="card mb-6" x-show="!mailRelayConfigured">
+        <h2 class="text-xl font-semibold mb-4">Configure Mail Relay</h2>
+        
+        <form @submit.prevent="configureRelay">
+            <div class="mb-4">
+                <label class="label" for="email">Microsoft 365 Email</label>
+                <input type="email" id="email" x-model="email" class="input" required placeholder="user@example.com">
+                <p class="text-sm text-gray-500 mt-1">Enter your Microsoft 365 email address to authenticate with.</p>
+            </div>
+            
+            <!-- Mail User Type -->
+            <div class="mb-4">
+                <label class="label">Send Mail As</label>
+                <div class="space-y-2">
+                    <div>
+                        <input type="radio" id="primary" name="mailboxType" value="primary" x-model="mailboxType">
+                        <label for="primary">Primary Email Address</label>
+                    </div>
+                    
+                    <div>
+                        <input type="radio" id="shared" name="mailboxType" value="shared" x-model="mailboxType">
+                        <label for="shared">Shared Mailbox</label>
+                        
+                        <div x-show="mailboxType === 'shared'" class="ml-6 mt-2">
+                            <input type="text" x-model="sharedMailbox" class="input" placeholder="shared@example.com">
+                            
+                            <div class="mt-2">
+                                <input type="checkbox" id="useAlias" x-model="useAlias">
+                                <label for="useAlias">Use Alias of Shared Mailbox</label>
+                                
+                                <div x-show="useAlias" class="ml-6 mt-2">
+                                    <input type="text" x-model="alias" class="input" placeholder="alias@example.com">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <input type="radio" id="alias" name="mailboxType" value="alias" x-model="mailboxType">
+                        <label for="alias">My Alias</label>
+                        
+                        <div x-show="mailboxType === 'alias'" class="ml-6 mt-2">
+                            <input type="text" x-model="alias" class="input" placeholder="myalias@example.com">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admin Options Section (initially hidden) -->
+            <div class="mb-4">
+                <button type="button" @click="showAdminOptions = !showAdminOptions" class="btn-secondary w-full flex justify-between items-center">
+                    <span>Admin Options</span>
+                    <svg :class="showAdminOptions ? 'transform rotate-180' : ''" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                
+                <div x-show="showAdminOptions" class="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50 collapsible-section">
+                    <div class="text-red-600 mb-4">
+                        <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span>WARNING: Using admin accounts for mail relay is not recommended</span>
+                    </div>
+                    
+                    <h3 class="font-semibold mb-2">Admin Mailflow Options</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <input type="radio" id="createMailbox" name="adminOption" value="createMailbox">
+                            <label for="createMailbox">Create a Mailbox to send as</label>
+                            
+                            <div class="ml-6 mt-2">
+                                <select class="input">
+                                    <option value="regular">Regular Mailbox</option>
+                                    <option value="shared" selected>Shared Mailbox (Recommended)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <input type="radio" id="createApp" name="adminOption" value="createApp">
+                            <label for="createApp">Create Enterprise App to send as</label>
+                            
+                            <div class="ml-6 mt-2">
+                                <div class="mb-2">
+                                    <input type="radio" id="staticIp" name="ipType" value="static" checked>
+                                    <label for="staticIp">I have a static IP</label>
+                                    <input type="text" class="input mt-2" placeholder="Enter static IP">
+                                </div>
+                                
+                                <div>
+                                    <input type="radio" id="dynamicIp" name="ipType" value="dynamic">
+                                    <label for="dynamicIp">I have a dynamic IP</label>
+                                    <p class="text-sm text-gray-500 mt-1">The device will periodically check and update the allowed IP.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" class="btn">Configure and Sign in with Microsoft</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Test Email Section -->
+    <div class="card" x-show="mailRelayConfigured">
+        <h2 class="text-xl font-semibold mb-4">Test Mail Relay</h2>
+        
+        <form @submit.prevent="sendTestEmail">
+            <div class="mb-4">
+                <label class="label" for="testRecipient">Test Recipient</label>
+                <input type="email" id="testRecipient" x-model="testRecipient" class="input" required placeholder="recipient@example.com">
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" class="btn" :disabled="testSending">
+                    <span x-show="!testSending">Send Test Email</span>
+                    <span x-show="testSending">Sending...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Additional JavaScript if needed
+</script>
+{% endblock %}
