@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block title %}Logs{% endblock %}
+
+{% block head %}
+<style>
+    .log-container {
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: monospace;
+        white-space: pre-wrap;
+        background-color: #f5f5f5;
+    }
+    
+    .pagination-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.375rem;
+        border: 1px solid #e2e8f0;
+        margin: 0 0.25rem;
+    }
+    
+    .pagination-button:hover {
+        background-color: #f0f9f8;
+    }
+    
+    .pagination-button-active {
+        background-color: #4ECDC4;
+        color: white;
+        border-color: #4ECDC4;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="{
+    mailLog: {
+        entries: [],
+        totalPages: 0,
+        currentPage: 1,
+        perPage: 50,
+        perPageOptions: [10, 50, 100, 200],
+        filter: {
+            subject: '',
+            sender: '',
+            recipient: '',
+            dateFrom: '',
+            dateTo: ''
+        },
+        loading: true
+    },
+    systemLogs: {
+        gunicorn: '',
+        adminChanges: '',
+        sshAccess: '',
+        firmwareUpdate: '',
+        uptime: '',
+        connectivity: '',
+        selectedLog: 'gunicorn',
+        loading: true
+    },
+    
+    init() {
+        this.fetchMailLog();
+        this.fetchSystemLogs();
+    },
+    
+    fetchMailLog() {
+        this.mailLog.loading = true;
+        
+        // Mock data - would fetch from backend in real implementation
+        setTimeout(() => {
+            // Generate sample mail log entries
+            const sampleEntries = [];
+            const domains = ['example.com', 'test.org', 'sentigee.com', 'gmail.com', 'outlook.com'];
+            const subjects = [
+                'Meeting reminder', 
+                'Weekly report', 
+                'Important update', 
+                'Hello there', 
+                'Project status',
+                'Invoice #12345',
+                'Your account statement',
+                'Welcome to Sentigee',
+                'Password reset request',
+                'New feature announcement'
+            ];
+            
+            for (let i = 0; i < 123; i++) {
+                const date = new Date();
+                date.setMinutes(date.getMinutes() - i * 30);
+                
+                const sender = `user${Math.floor(Math.random() * 10)}@${domains[Math.floor(Math.random() * domains.length)]}`;
+                const recipient = `recipient${Math.floor(Math.random() * 10)}@${domains[Math.floor(Math.random() * domains.length)]}`;
+                const subject = subjects[Math.floor(Math.random() * subjects.length)];
+                const size = Math.floor(Math.random() * 1000) + 1;
+                const sourceIp = `192.168.1.${Math.floor(Math.random() * 255)}`;
+                
+                const attachments = Math.random() > 0.7 ? ['document.pdf', 'image.jpg'].slice(0, Math.floor(Math.random() * 2) + 1) : [];
+                
+                sampleEntries.push({
+                    id: i + 1,
+                    date: date.toLocaleString(),
+                    sender,
+                    recipient,
+                    cc: Math.random() > 0.8 ? `cc${Math.floor(Math.random() * 5)}@${domains[Math.floor(Math.random() * domains.length)]}` : '',
+                    bcc: Math.random() > 0.9 ? `bcc${Math.floor(Math.random() * 5)}@${domains[Math.floor(Math.random() * domains.length)]}` : '',
+                    subject,
+                    size: `${size} KB`,
+                    sourceIp,
+                    attachments,
+                    bodyPreview: `This is a sample email body for ${subject}. This would show the first 75 characters of the email.`
+                });
+            }
+            
+            this.mailLog.entries = sampleEntries;
+            this.mailLog.totalPages = Math.ceil(sampleEntries.length / this.mailLog.perPage);
+            this.mailLog.loading = false;
+        }, 500);
+    },
+    
+    fetchSystemLogs() {
+        this.systemLogs.loading = true;
+        
+        // Mock data - would fetch from backend in real implementation
+        setTimeout(() => {
+            this.systemLogs.gunicorn = '[2025-02-27 12:10:15] [INFO] Starting Gunicorn server\n[2025-02-27 12:10:15] [INFO] Listening at: http://0.0.0.0:8080\n[2025-02-27 12:10:15] [INFO] Using worker: sync\n[2025-02-27 12:10:15] [INFO] Booting worker with pid: 12345\n[2025-02-27 12:15:20] [INFO] Handling request: GET /\n[2025-02-27 12:15:21] [INFO] Handling request: GET /static/css/main.css\n[2025-02-27 12:20:30] [INFO] Handling request: POST /api/mail-relay/status\n[2025-02-27 12:20:31] [INFO] Processing mail relay status request\n[2025-02-27 12:20:31] [INFO] Mail relay status request completed successfully';
+            
+            this.systemLogs.adminChanges = '[2025-02-27 10:00:00] [INFO] Admin user changed mail relay configuration\n[2025-02-27 10:05:15] [INFO] Admin user updated NTP server list\n[2025-02-27 11:30:45] [INFO] Admin user changed hostname to "sentigee"\n[2025-02-27 12:15:30] [INFO] Admin user modified network settings\n[2025-02-27 12:45:00] [INFO] Admin user configured OAuth token refresh interval';
+            
+            this.systemLogs.sshAccess = '[2025-02-27 09:15:22] [INFO] SSH login attempt from 10.0.7.98: success\n[2025-02-27 09:15:22] [INFO] SSH session opened for user: sentigeeRoot\n[2025-02-27 10:30:15] [INFO] SSH session closed for user: sentigeeRoot\n[2025-02-27 11:45:30] [INFO] SSH login attempt from 10.0.7.98: success\n[2025-02-27 11:45:30] [INFO] SSH session opened for user: sentigeeRoot\n[2025-02-27 12:30:00] [INFO] SSH session closed for user: sentigeeRoot';
+            
+            this.systemLogs.firmwareUpdate = '[2025-02-27 08:00:00] [INFO] Checking for system updates\n[2025-02-27 08:00:15] [INFO] No updates available\n[2025-02-25 20:00:00] [INFO] System update initiated\n[2025-02-25 20:05:30] [INFO] Downloaded system packages\n[2025-02-25 20:10:45] [INFO] Installed system packages\n[2025-02-25 20:15:00] [INFO] System update completed successfully\n[2025-02-25 20:15:01] [INFO] System reboot scheduled';
+            
+            this.systemLogs.uptime = '[2025-02-27 12:00:00] [INFO] System uptime: 2 days, 16 hours, 45 minutes\n[2025-02-25 20:15:10] [INFO] System reboot initiated\n[2025-02-25 20:20:00] [INFO] System startup completed\n[2025-02-23 03:30:15] [INFO] Unexpected system shutdown detected\n[2025-02-23 03:35:00] [INFO] System startup completed';
+            
+            this.systemLogs.connectivity = '[2025-02-27 12:00:00] [INFO] Internet connectivity check: success\n[2025-02-27 11:00:00] [INFO] Internet connectivity check: success\n[2025-02-27 10:00:00] [INFO] Internet connectivity check: success\n[2025-02-27 09:00:00] [INFO] Internet connectivity check: success\n[2025-02-27 08:00:00] [INFO] Internet connectivity check: success\n[2025-02-27 07:00:00] [INFO] Internet connectivity check: success\n[2025-02-27 06:00:00] [INFO] Internet connectivity check: failed\n[2025-02-27 05:50:00] [WARNING] Internet connectivity lost\n[2025-02-27 06:10:00] [INFO] Internet connectivity restored';
+            
+            this.systemLogs.loading = false;
+        }, 500);
+    },
+    
+    getFilteredMailLog() {
+        // Apply filters to mail log entries
+        let filtered = this.mailLog.entries;
+        
+        if (this.mailLog.filter.subject) {
+            const pattern = this.mailLog.filter.subject.replace(/\*/g, '.*');
+            const regex = new RegExp(pattern, 'i');
+            filtered = filtered.filter(entry => regex.test(entry.subject));
+        }
+        
+        if (this.mailLog.filter.sender) {
+            const pattern = this.mailLog.filter.sender.replace(/\*/g, '.*');
+            const regex = new RegExp(pattern, 'i');
+            filtered = filtered.filter(entry => regex.test(entry.sender));
+        }
+        
+        if (this.mailLog.filter.recipient) {
+            const pattern = this.mailLog.filter.recipient.replace(/\*/g, '.*');
+            const regex = new RegExp(pattern, 'i');
+            filtered = filtered.filter(entry => regex.test(entry.recipient));
+        }
+        
+        if (this.mailLog.filter.dateFrom) {
+            const fromDate = new Date(this.mailLog.filter.dateFrom);
+            filtered = filtered.filter(entry => new Date(entry.date) >= fromDate);
+        }
+        
+        if (this.mailLog.filter.dateTo) {
+            const toDate = new Date(this.mailLog.filter.dateTo);
+            toDate.setHours(23, 59, 59, 999); // End of day
+            filtered = filtered.filter(entry => new Date(entry.date) <= toDate);
+        }
+        
+        // Update total pages based on filtered data
+        this.mailLog.totalPages = Math.ceil(filtered.length / this.mailLog.perPage);
+        
+        // Reset to first page if current page is now invalid
+        if (this.mailLog.currentPage > this.mailLog.totalPages) {
+            this.mailLog.currentPage = 1;
+        }
+        
+        // Paginate the filtered data
+        const startIndex = (this.mailLog.currentPage - 1) * this.mailLog.perPage;
+        const endIndex = startIndex + this.mailLog.perPage;
+        
+        return filtered.slice(startIndex, endIndex);
+    },
+    
+    clearMailLogFilters() {
+        this.mailLog.filter = {
+            subject: '',
+            sender: '',
+            recipient: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+    },
+    
+    refreshMailLog() {
+        this.fetchMailLog();
+    },
+    
+    changePage(page) {
+        this.mailLog.currentPage = Math.max(1, Math.min(page, this.mailLog.totalPages));
+    },
+    
+    changePerPage(value) {
+        this.mailLog.perPage = value;
+        this.mailLog.currentPage = 1;
+        this.mailLog.totalPages = Math.ceil(this.mailLog.entries.length / this.mailLog.perPage);
+    },
+    
+    getPaginationRange() {
+        const total = this.mailLog.totalPages;
+        const current = this.mailLog.currentPage;
+        
+        if (total <= 7) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+        
+        if (current <= 3) {
+            return [1, 2, 3, 4, 5, '...', total];
+        }
+        
+        if (current >= total - 2) {
+            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+        }
+        
+        return [1, '...', current - 1, current, current + 1, '...', total];
+    }
+}">
+    <h1 class="text-2xl font-bold mb-6">Logs</h1>
+    
+    <!-- Mail Log Tab -->
+    <div class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Mail Log</h2>
+        
+        <!-- Filters -->
+        <div class="mb-4 bg-gray-50 p-4 rounded-lg">
+            <h3 class="font-medium mb-2">Filter Mail Logs</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="label" for="subjectFilter">Subject</label>
+                    <input type="text" id="subjectFilter" x-model="mailLog.filter.subject" class="input" placeholder="*keyword*">
+                </div>
+                
+                <div>
+                    <label class="label" for="senderFilter">Sender</label>
+                    <input type="text" id="senderFilter" x-model="mailLog.filter.sender" class="input" placeholder="*@example.com">
+                </div>
+                
+                <div>
+                    <label class="label" for="recipientFilter">Recipient</label>
+                    <input type="text" id="recipientFilter" x-model="mailLog.filter.recipient" class="input" placeholder="*@example.com">
+                </div>
+                
+                <div>
+                    <label class="label" for="dateFromFilter">Date From</label>
+                    <input type="date" id="dateFromFilter" x-model="mailLog.filter.dateFrom" class="input">
+                </div>
+                
+                <div>
+                    <label class="label" for="dateToFilter">Date To</label>
+                    <input type="date" id="dateToFilter" x-model="mailLog.filter.dateTo" class="input">
+                </div>
+                
+                <div class="flex items-end space-x-2">
+                    <button @click="clearMailLogFilters" class="btn-secondary">Clear Filters</button>
+                    <button @click="refreshMailLog" class="btn">Refresh</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mail Log Table -->
+        <div class="overflow-x-auto">
+            <div class="flex justify-end mb-2">
+                <label class="flex items-center">
+                    <span class="mr-2">Rows per page:</span>
+                    <select x-model.number="mailLog.perPage" @change="changePerPage($event.target.value)" class="border rounded p-1">
+                        <template x-for="option in mailLog.perPageOptions" :key="option">
+                            <option :value="option" x-text="option"></option>
+                        </template>
+                    </select>
+                </label>
+            </div>
+            
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="py-2 px-4 border-b text-left">Date/Time</th>
+                        <th class="py-2 px-4 border-b text-left">Subject</th>
+                        <th class="py-2 px-4 border-b text-left">Sender</th>
+                        <th class="py-2 px-4 border-b text-left">Recipient</th>
+                        <th class="py-2 px-4 border-b text-left">Size</th>
+                        <th class="py-2 px-4 border-b text-left">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-if="mailLog.loading">
+                        <tr>
+                            <td colspan="6" class="py-4 text-center text-gray-500">Loading mail logs...</td>
+                        </tr>
+                    </template>
+                    
+                    <template x-if="!mailLog.loading && getFilteredMailLog().length === 0">
+                        <tr>
+                            <td colspan="6" class="py-4 text-center text-gray-500">No mail logs found matching your filters</td>
+                        </tr>
+                    </template>
+                    
+                    <template x-for="entry in getFilteredMailLog()" :key="entry.id">
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-2 px-4 border-b" x-text="entry.date"></td>
+                            <td class="py-2 px-4 border-b" x-text="entry.subject"></td>
+                            <td class="py-2 px-4 border-b" x-text="entry.sender"></td>
+                            <td class="py-2 px-4 border-b" x-text="entry.recipient"></td>
+                            <td class="py-2 px-4 border-b" x-text="entry.size"></td>
+                            <td class="py-2 px-4 border-b">
+                                <button
+                                    @click="$refs.detailsModal.showModal(); $refs.selectedEntry = entry"
+                                    class="text-seafoam hover:text-seafoam-dark">
+                                    View Details
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="flex justify-between items-center mt-4">
+                <div class="text-sm text-gray-600">
+                    Showing <span x-text="(mailLog.currentPage - 1) * mailLog.perPage + 1"></span>
+                    to <span x-text="Math.min(mailLog.currentPage * mailLog.perPage, mailLog.entries.length)"></span>
+                    of <span x-text="mailLog.entries.length"></span> entries
+                </div>
+                
+                <div class="flex items-center">
+                    <button
+                        @click="changePage(mailLog.currentPage - 1)"
+                        :disabled="mailLog.currentPage === 1"
+                        :class="mailLog.currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''"
+                        class="pagination-button">
+                        &lt;
+                    </button>
+                    
+                    <template x-for="page in getPaginationRange()" :key="page">
+                        <template x-if="page === '...'">
+                            <span class="mx-2">...</span>
+                        </template>
+                        
+                        <template x-if="page !== '...'">
+                            <button
+                                @click="changePage(page)"
+                                :class="mailLog.currentPage === page ? 'pagination-button-active' : 'pagination-button'"
+                                x-text="page">
+                            </button>
+                        </template>
+                    </template>
+                    
+                    <button
+                        @click="changePage(mailLog.currentPage + 1)"
+                        :disabled="mailLog.currentPage === mailLog.totalPages"
+                        :class="mailLog.currentPage === mailLog.totalPages ? 'opacity-50 cursor-not-allowed' : ''"
+                        class="pagination-button">
+                        &gt;
+                    </button>
+                    
+                    <div class="ml-4 flex items-center">
+                        <span class="mr-2">Go to page:</span>
+                        <input
+                            type="number"
+                            min="1"
+                            :max="mailLog.totalPages"
+                            class="w-16 p-1 border rounded"
+                            @keyup.enter="changePage(parseInt($event.target.value) || 1)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Other Logs Tab -->
+    <div class="card">
+        <h2 class="text-xl font-semibold mb-4">System Logs</h2>
+        
+        <div class="mb-4">
+            <div class="flex space-x-2 border-b border-gray-200">
+                <button 
+                    @click="systemLogs.selectedLog = 'gunicorn'" 
+                    :class="systemLogs.selectedLog === 'gunicorn' ? 'tab-active' : 'tab'">
+                    Gunicorn Log
+                </button>
+                <button 
+                    @click="systemLogs.selectedLog = 'adminChanges'" 
+                    :class="systemLogs.selectedLog === 'adminChanges' ? 'tab-active' : 'tab'">
+                    Admin Change Log
+                </button>
+                <button 
+                    @click="systemLogs.selectedLog = 'sshAccess'" 
+                    :class="systemLogs.selectedLog === 'sshAccess' ? 'tab-active' : 'tab'">
+                    SSH Access Log
+                </button>
+                <button 
+                    @click="systemLogs.selectedLog = 'firmwareUpdate'" 
+                    :class="systemLogs.selectedLog === 'firmwareUpdate' ? 'tab-active' : 'tab'">
+                    Firmware Update Log
+                </button>
+                <button 
+                    @click="systemLogs.selectedLog = 'uptime'" 
+                    :class="systemLogs.selectedLog === 'uptime' ? 'tab-active' : 'tab'">
+                    Uptime Log
+                </button>
+                <button 
+                    @click="systemLogs.selectedLog = 'connectivity'" 
+                    :class="systemLogs.selectedLog === 'connectivity' ? 'tab-active' : 'tab'">
+                    Connectivity Log
+                </button>
+            </div>
+        </div>
+        
+        <div x-show="systemLogs.loading" class="text-center py-8">
+            <span class="text-gray-500">Loading log data...</span>
+        </div>
+        
+        <div x-show="!systemLogs.loading">
+            <pre class="log-container p-4 rounded-lg" x-text="systemLogs[systemLogs.selectedLog]"></pre>
+        </div>
+    </div>
+    
+    <!-- Email Details Modal -->
+    <dialog x-ref="detailsModal" class="bg-white rounded-lg shadow-xl p-0 max-w-3xl w-full">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Email Details</h3>
+                <button @click="$refs.detailsModal.close()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div x-show="$refs.selectedEntry">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="font-semibold">Date/Time:</p>
+                        <p x-text="$refs.selectedEntry?.date"></p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Size:</p>
+                        <p x-text="$refs.selectedEntry?.size"></p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Subject:</p>
+                        <p x-text="$refs.selectedEntry?.subject"></p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Source IP:</p>
+                        <p x-text="$refs.selectedEntry?.sourceIp"></p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Sender:</p>
+                        <p x-text="$refs.selectedEntry?.sender"></p>
+                    </div>
+                    <div x-show="$refs.selectedEntry?.attachments?.length > 0">
+                        <p class="font-semibold">Attachments:</p>
+                        <p x-text="$refs.selectedEntry?.attachments?.join(', ')"></p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Recipient:</p>
+                        <p x-text="$refs.selectedEntry?.recipient"></p>
+                    </div>
+                </div>
+                
+                <div x-show="$refs.selectedEntry?.cc" class="mb-2">
+                    <p class="font-semibold">CC:</p>
+                    <p x-text="$refs.selectedEntry?.cc"></p>
+                </div>
+                
+                <div x-show="$refs.selectedEntry?.bcc" class="mb-2">
+                    <p class="font-semibold">BCC:</p>
+                    <p x-text="$refs.selectedEntry?.bcc"></p>
+                </div>
+                
+                <div class="mt-4">
+                    <p class="font-semibold">Body Preview:</p>
+                    <p class="bg-gray-50 p-3 rounded" x-text="$refs.selectedEntry?.bodyPreview"></p>
+                </div>
+            </div>
+        </div>
+    </dialog>
+</div>
+{% endblock %}
