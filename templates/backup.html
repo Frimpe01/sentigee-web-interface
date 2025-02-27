@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}Backup Configuration{% endblock %}
+
+{% block content %}
+<div x-data="{
+    backupOptions: {
+        frequency: 'daily',
+        time: '03:00',
+        keep: 7,
+        location: 'local',
+        cloudProvider: '',
+        cloudSettings: {
+            accessKey: '',
+            secretKey: '',
+            region: '',
+            bucket: ''
+        },
+        networkSettings: {
+            path: '',
+            username: '',
+            password: ''
+        },
+        includeMailQueue: true,
+        includeLogs: false,
+        includeSystemSettings: true
+    },
+    backups: [
+        {
+            id: 1,
+            date: '2025-02-27 03:00:00',
+            size: '4.2 MB',
+            status: 'Complete',
+            type: 'Automatic',
+            location: 'Local'
+        },
+        {
+            id: 2,
+            date: '2025-02-26 03:00:00',
+            size: '4.1 MB',
+            status: 'Complete',
+            type: 'Automatic',
+            location: 'Local'
+        },
+        {
+            id: 3,
+            date: '2025-02-25 15:32:12',
+            size: '4.1 MB',
+            status: 'Complete',
+            type: 'Manual',
+            location: 'Local'
+        },
+        {
+            id: 4,
+            date: '2025-02-25 03:00:00',
+            size: '4.0 MB',
+            status: 'Complete',
+            type: 'Automatic',
+            location: 'Local'
+        },
+        {
+            id: 5,
+            date: '2025-02-24 03:00:00',
+            size: '3.9 MB',
+            status: 'Complete',
+            type: 'Automatic',
+            location: 'Local'
+        }
+    ],
+    creating: false,
+    restoring: false,
+    selectedBackup: null,
+    
+    createBackup() {
+        if (!confirm('Are you sure you want to create a backup now?')) {
+            return;
+        }
+        
+        this.creating = true;
+        
+        // In a real implementation, this would call an API to create a backup
+        setTimeout(() => {
+            const now = new Date();
+            this.backups.unshift({
+                id: this.backups.length + 1,
+                date: now.toLocaleString(),
+                size: '4.3 MB',
+                status: 'Complete',
+                type: 'Manual',
+                location: this.backupOptions.location === 'local' ? 'Local' : 
+                          this.backupOptions.location === 'cloud' ? 'Cloud' : 'Network'
+            });
+            
+            this.creating = false;
+            alert('Backup created successfully');
+        }, 2000);
+    },
+    
+    restoreBackup() {
+        if (!this.selectedBackup) {
+            alert('Please select a backup to restore');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to restore from backup ${this.selectedBackup.date}? This will overwrite your current configuration.`)) {
+            return;
+        }
+        
+        this.restoring = true;
+        
+        // In a real implementation, this would call an API to restore from backup
+        setTimeout(() => {
+            this.restoring = false;
+            alert('Backup restored successfully');
+        }, 3000);
+    },
+    
+    downloadBackup(backup) {
+        // In a real implementation, this would download the backup file
+        alert(`Downloading backup from ${backup.date}`);
+    },
+    
+    deleteBackup(backup) {
+        if (!confirm(`Are you sure you want to delete the backup from ${backup.date}?`)) {
+            return;
+        }
+        
+        // In a real implementation, this would call an API to delete the backup
+        this.backups = this.backups.filter(b => b.id !== backup.id);
+        
+        if (this.selectedBackup && this.selectedBackup.id === backup.id) {
+            this.selectedBackup = null;
+        }
+        
+        alert('Backup deleted successfully');
+    },
+    
+    saveBackupSettings() {
+        // In a real implementation, this would call an API to save the backup settings
+        alert('Backup settings saved successfully');
+    }
+}">
+    <h1 class="text-2xl font-bold mb-6">Backup Configuration</h1>
+    
+    <!-- Backup Settings -->
+    <div class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Backup Settings</h2>
+        
+        <form @submit.prevent="saveBackupSettings">
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Schedule</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="label" for="backupFrequency">Backup Frequency</label>
+                            <select id="backupFrequency" x-model="backupOptions.frequency" class="input">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="manual">Manual Only</option>
+                            </select>
+                        </div>
+                        
+                        <div x-show="backupOptions.frequency !== 'manual'">
+                            <label class="label" for="backupTime">Backup Time</label>
+                            <input type="time" id="backupTime" x-model="backupOptions.time" class="input">
+                        </div>
+                        
+                        <div>
+                            <label class="label" for="backupKeep">Keep Backups</label>
+                            <div class="flex items-center">
+                                <input type="number" id="backupKeep" x-model.number="backupOptions.keep" class="input mr-2 w-20" min="1" max="30">
+                                <span>most recent backups</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Backup Location</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="radio" name="backupLocation" value="local" x-model="backupOptions.location" class="mr-2">
+                                <span>Local Storage</span>
+                            </label>
+                            <p class="text-sm text-gray-500 ml-6">Store backups on the device's local storage</p>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="radio" name="backupLocation" value="cloud" x-model="backupOptions.location" class="mr-2">
+                                <span>Cloud Storage</span>
+                            </label>
+                            <p class="text-sm text-gray-500 ml-6">Store backups in cloud storage (AWS S3, Azure Blob Storage, etc.)</p>
+                            
+                            <div x-show="backupOptions.location === 'cloud'" class="mt-4 ml-6 space-y-4">
+                                <div>
+                                    <label class="label" for="cloudProvider">Cloud Provider</label>
+                                    <select id="cloudProvider" x-model="backupOptions.cloudProvider" class="input">
+                                        <option value="aws">Amazon S3</option>
+                                        <option value="azure">Azure Blob Storage</option>
+                                        <option value="gcp">Google Cloud Storage</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="label" for="accessKey">Access Key/ID</label>
+                                        <input type="text" id="accessKey" x-model="backupOptions.cloudSettings.accessKey" class="input">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="label" for="secretKey">Secret Key</label>
+                                        <input type="password" id="secretKey" x-model="backupOptions.cloudSettings.secretKey" class="input">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="label" for="region">Region</label>
+                                        <input type="text" id="region" x-model="backupOptions.cloudSettings.region" class="input" placeholder="us-east-1">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="label" for="bucket">Bucket/Container</label>
+                                        <input type="text" id="bucket" x-model="backupOptions.cloudSettings.bucket" class="input" placeholder="sentigee-backups">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="radio" name="backupLocation" value="network" x-model="backupOptions.location" class="mr-2">
+                                <span>Network Share</span>
+                            </label>
+                            <p class="text-sm text-gray-500 ml-6">Store backups on a network share (SMB/CIFS)</p>
+                            
+                            <div x-show="backupOptions.location === 'network'" class="mt-4 ml-6 space-y-4">
+                                <div>
+                                    <label class="label" for="networkPath">Network Path</label>
+                                    <input type="text" id="networkPath" x-model="backupOptions.networkSettings.path" class="input" placeholder="\\server\share\backups">
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="label" for="networkUsername">Username</label>
+                                        <input type="text" id="networkUsername" x-model="backupOptions.networkSettings.username" class="input">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="label" for="networkPassword">Password</label>
+                                        <input type="password" id="networkPassword" x-model="backupOptions.networkSettings.password" class="input">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Backup Content</h3>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="backupOptions.includeSystemSettings" class="mr-2">
+                                <span>System Settings and Configuration</span>
+                            </label>
+                            <p class="text-sm text-gray-500 ml-6">Network settings, mail relay configuration, etc.</p>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="backupOptions.includeMailQueue" class="mr-2">
+                                <span>Mail Queue</span>
+                            </label>
+                            <p class="text-sm text-gray-500 ml-6">Pending and queued mail messages</p>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="backupOptions.includeLogs" class="mr-2">
+                                <span>System Logs</span>
+                            </label>
+                            <p class="text-sm text-gray-500 ml-6">Application logs, mail logs, etc.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="submit" class="btn">Save Backup Settings</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Backup Management -->
+    <div class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Backup Management</h2>
+        
+        <div class="flex justify-end mb-4 space-x-2">
+            <button 
+                @click="createBackup" 
+                class="btn-secondary" 
+                :disabled="creating">
+                <span x-show="!creating">Create Backup Now</span>
+                <span x-show="creating">Creating Backup...</span>
+            </button>
+            
+            <button 
+                @click="restoreBackup" 
+                class="btn" 
+                :disabled="!selectedBackup || restoring">
+                <span x-show="!restoring">Restore Selected Backup</span>
+                <span x-show="restoring">Restoring...</span>
+            </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="py-2 px-4 border-b text-left w-8"></th>
+                        <th class="py-2 px-4 border-b text-left">Date/Time</th>
+                        <th class="py-2 px-4 border-b text-left">Size</th>
+                        <th class="py-2 px-4 border-b text-left">Type</th>
+                        <th class="py-2 px-4 border-b text-left">Location</th>
+                        <th class="py-2 px-4 border-b text-left">Status</th>
+                        <th class="py-2 px-4 border-b text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="backup in backups" :key="backup.id">
+                        <tr :class="selectedBackup && selectedBackup.id === backup.id ? 'bg-seafoam bg-opacity-10' : ''">
+                            <td class="py-2 px-4 border-b">
+                                <input 
+                                    type="radio" 
+                                    name="selectedBackup" 
+                                    :value="backup.id" 
+                                    @click="selectedBackup = backup"
+                                    :checked="selectedBackup && selectedBackup.id === backup.id">
+                            </td>
+                            <td class="py-2 px-4 border-b" x-text="backup.date"></td>
+                            <td class="py-2 px-4 border-b" x-text="backup.size"></td>
+                            <td class="py-2 px-4 border-b" x-text="backup.type"></td>
+                            <td class="py-2 px-4 border-b" x-text="backup.location"></td>
+                            <td class="py-2 px-4 border-b">
+                                <span 
+                                    :class="backup.status === 'Complete' ? 'badge-success' : 
+                                           backup.status === 'Failed' ? 'badge-error' : 'badge-warning'"
+                                    x-text="backup.status"></span>
+                            </td>
+                            <td class="py-2 px-4 border-b">
+                                <button 
+                                    @click="downloadBackup(backup)" 
+                                    class="text-seafoam hover:text-seafoam-dark mr-2"
+                                    title="Download Backup">
+                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </button>
+                                <button 
+                                    @click="deleteBackup(backup)" 
+                                    class="text-red-600 hover:text-red-800"
+                                    title="Delete Backup">
+                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Import/Export Configuration -->
+    <div class="card">
+        <h2 class="text-xl font-semibold mb-4">Import/Export Configuration</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-lg font-medium mb-2">Export Configuration</h3>
+                <p class="text-gray-600 mb-4">Export your system configuration as a file that can be imported into another Sentigee device.</p>
+                
+                <div class="space-y-2">
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" checked class="mr-2">
+                            <span>Include mail relay settings</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" checked class="mr-2">
+                            <span>Include network configuration</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" checked class="mr-2">
+                            <span>Include feature configurations</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2">
+                            <span>Include OAuth tokens (not recommended)</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button class="btn-secondary">Export Configuration</button>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">Import Configuration</h3>
+                <p class="text-gray-600 mb-4">Import a configuration file from another Sentigee device.</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="label" for="configFile">Configuration File</label>
+                        <input type="file" id="configFile" class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-md file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-seafoam file:text-white
+                        hover:file:bg-seafoam-dark">
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2">
+                            <span>Override existing settings</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <button class="btn">Import Configuration</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
