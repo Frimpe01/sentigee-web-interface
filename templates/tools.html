@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Tools{% endblock %}
+
+{% block content %}
+<div x-data="{
+    activeTool: 'ping',
+    pingData: {
+        host: '',
+        count: 4,
+        results: '',
+        loading: false
+    },
+    tracerouteData: {
+        host: '',
+        maxHops: 30,
+        results: '',
+        loading: false
+    },
+    nslookupData: {
+        host: '',
+        type: 'A',
+        server: '',
+        results: '',
+        loading: false
+    },
+    portScanData: {
+        host: '',
+        ports: '80,443,22,25',
+        results: '',
+        loading: false
+    },
+    
+    runPing() {
+        if (!this.pingData.host) {
+            alert('Please enter a hostname or IP address');
+            return;
+        }
+        
+        this.pingData.loading = true;
+        this.pingData.results = 'Running ping to ' + this.pingData.host + '...\n';
+        
+        // Simulate ping results (in a real implementation, this would call an API)
+        setTimeout(() => {
+            this.pingData.results += `PING ${this.pingData.host} (192.168.1.1) 56(84) bytes of data.\n`;
+            
+            for (let i = 0; i < this.pingData.count; i++) {
+                const time = Math.random() * 10 + 5;
+                this.pingData.results += `64 bytes from ${this.pingData.host} (192.168.1.1): icmp_seq=${i+1} ttl=64 time=${time.toFixed(3)} ms\n`;
+            }
+            
+            this.pingData.results += `\n--- ${this.pingData.host} ping statistics ---\n`;
+            this.pingData.results += `${this.pingData.count} packets transmitted, ${this.pingData.count} received, 0% packet loss, time ${this.pingData.count * 1000}ms\n`;
+            this.pingData.results += `rtt min/avg/max/mdev = 5.123/7.456/12.789/2.345 ms\n`;
+            
+            this.pingData.loading = false;
+        }, 1500);
+    },
+    
+    runTraceroute() {
+        if (!this.tracerouteData.host) {
+            alert('Please enter a hostname or IP address');
+            return;
+        }
+        
+        this.tracerouteData.loading = true;
+        this.tracerouteData.results = 'Running traceroute to ' + this.tracerouteData.host + '...\n';
+        
+        // Simulate traceroute results
+        setTimeout(() => {
+            this.tracerouteData.results += `traceroute to ${this.tracerouteData.host} (192.168.1.1), ${this.tracerouteData.maxHops} hops max, 60 byte packets\n`;
+            
+            for (let i = 1; i <= 5; i++) {
+                const time1 = Math.random() * 10 + 5;
+                const time2 = Math.random() * 10 + 5;
+                const time3 = Math.random() * 10 + 5;
+                
+                if (i === 1) {
+                    this.tracerouteData.results += ` ${i}  router.local (10.0.0.1)  ${time1.toFixed(3)} ms  ${time2.toFixed(3)} ms  ${time3.toFixed(3)} ms\n`;
+                } else if (i === 2) {
+                    this.tracerouteData.results += ` ${i}  gateway.isp.net (64.233.160.1)  ${time1.toFixed(3)} ms  ${time2.toFixed(3)} ms  ${time3.toFixed(3)} ms\n`;
+                } else if (i === 3) {
+                    this.tracerouteData.results += ` ${i}  backbone1.isp.net (64.233.160.25)  ${time1.toFixed(3)} ms  ${time2.toFixed(3)} ms  ${time3.toFixed(3)} ms\n`;
+                } else if (i === 4) {
+                    this.tracerouteData.results += ` ${i}  backbone2.isp.net (64.233.160.50)  ${time1.toFixed(3)} ms  ${time2.toFixed(3)} ms  ${time3.toFixed(3)} ms\n`;
+                } else {
+                    this.tracerouteData.results += ` ${i}  ${this.tracerouteData.host} (192.168.1.1)  ${time1.toFixed(3)} ms  ${time2.toFixed(3)} ms  ${time3.toFixed(3)} ms\n`;
+                }
+            }
+            
+            this.tracerouteData.loading = false;
+        }, 2000);
+    },
+    
+    runNslookup() {
+        if (!this.nslookupData.host) {
+            alert('Please enter a hostname or IP address');
+            return;
+        }
+        
+        this.nslookupData.loading = true;
+        this.nslookupData.results = 'Running nslookup for ' + this.nslookupData.host + '...\n';
+        
+        // Simulate nslookup results
+        setTimeout(() => {
+            const server = this.nslookupData.server || 'default';
+            this.nslookupData.results += `Server:\t\t${server}\n`;
+            this.nslookupData.results += `Address:\t\t10.0.0.1#53\n\n`;
+            
+            if (this.nslookupData.type === 'A') {
+                this.nslookupData.results += `Name:\t${this.nslookupData.host}\n`;
+                this.nslookupData.results += `Address: 192.168.1.1\n`;
+            } else if (this.nslookupData.type === 'MX') {
+                this.nslookupData.results += `${this.nslookupData.host}\tmail exchanger = 10 mail.${this.nslookupData.host}\n`;
+                this.nslookupData.results += `${this.nslookupData.host}\tmail exchanger = 20 mail2.${this.nslookupData.host}\n`;
+            } else if (this.nslookupData.type === 'TXT') {
+                this.nslookupData.results += `${this.nslookupData.host}\ttext = "v=spf1 include:_spf.google.com ~all"\n`;
+            } else if (this.nslookupData.type === 'CNAME') {
+                this.nslookupData.results += `${this.nslookupData.host}\tcanonical name = host.${this.nslookupData.host.split('.').slice(-2).join('.')}\n`;
+            }
+            
+            this.nslookupData.loading = false;
+        }, 1500);
+    },
+    
+    runPortScan() {
+        if (!this.portScanData.host) {
+            alert('Please enter a hostname or IP address');
+            return;
+        }
+        
+        this.portScanData.loading = true;
+        this.portScanData.results = 'Scanning ports on ' + this.portScanData.host + '...\n';
+        
+        // Simulate port scan results
+        setTimeout(() => {
+            this.portScanData.results += `Starting port scan on ${this.portScanData.host} (192.168.1.1)\n\n`;
+            
+            const ports = this.portScanData.ports.split(',').map(p => p.trim());
+            
+            for (const port of ports) {
+                const isOpen = Math.random() > 0.5;
+                const service = this.getServiceName(port);
+                
+                if (isOpen) {
+                    this.portScanData.results += `Port ${port}/tcp is open\t${service}\n`;
+                } else {
+                    this.portScanData.results += `Port ${port}/tcp is closed\t${service}\n`;
+                }
+            }
+            
+            this.portScanData.results += `\nPort scan completed for ${this.portScanData.host}\n`;
+            
+            this.portScanData.loading = false;
+        }, 2000);
+    },
+    
+    getServiceName(port) {
+        const services = {
+            '22': 'ssh',
+            '25': 'smtp',
+            '53': 'domain',
+            '80': 'http',
+            '443': 'https',
+            '587': 'submission',
+            '3306': 'mysql',
+            '5432': 'postgresql'
+        };
+        
+        return services[port] || 'unknown';
+    }
+}">
+    <h1 class="text-2xl font-bold mb-6">Network Tools</h1>
+    
+    <div class="card mb-6">
+        <div class="flex border-b border-gray-200 mb-4">
+            <button 
+                @click="activeTool = 'ping'" 
+                :class="activeTool === 'ping' ? 'tab-active' : 'tab'">
+                Ping
+            </button>
+            <button 
+                @click="activeTool = 'traceroute'" 
+                :class="activeTool === 'traceroute' ? 'tab-active' : 'tab'">
+                Traceroute
+            </button>
+            <button 
+                @click="activeTool = 'nslookup'" 
+                :class="activeTool === 'nslookup' ? 'tab-active' : 'tab'">
+                DNS Lookup
+            </button>
+            <button 
+                @click="activeTool = 'portscan'" 
+                :class="activeTool === 'portscan' ? 'tab-active' : 'tab'">
+                Port Scan
+            </button>
+        </div>
+        
+        <!-- Ping Tool -->
+        <div x-show="activeTool === 'ping'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label" for="pingHost">Hostname or IP Address</label>
+                    <input type="text" id="pingHost" x-model="pingData.host" class="input" placeholder="example.com or 8.8.8.8">
+                </div>
+                <div>
+                    <label class="label" for="pingCount">Ping Count</label>
+                    <input type="number" id="pingCount" x-model.number="pingData.count" class="input" min="1" max="20">
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button 
+                    @click="runPing" 
+                    class="btn" 
+                    :disabled="pingData.loading">
+                    <span x-show="!pingData.loading">Run Ping</span>
+                    <span x-show="pingData.loading">Running...</span>
+                </button>
+            </div>
+            
+            <div x-show="pingData.results" class="mt-4">
+                <h3 class="font-semibold mb-2">Results:</h3>
+                <pre class="bg-gray-100 p-4 rounded-md whitespace-pre-wrap font-mono text-sm" x-text="pingData.results"></pre>
+            </div>
+        </div>
+        
+        <!-- Traceroute Tool -->
+        <div x-show="activeTool === 'traceroute'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label" for="tracerouteHost">Hostname or IP Address</label>
+                    <input type="text" id="tracerouteHost" x-model="tracerouteData.host" class="input" placeholder="example.com or 8.8.8.8">
+                </div>
+                <div>
+                    <label class="label" for="tracerouteMaxHops">Max Hops</label>
+                    <input type="number" id="tracerouteMaxHops" x-model.number="tracerouteData.maxHops" class="input" min="1" max="30">
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button 
+                    @click="runTraceroute" 
+                    class="btn" 
+                    :disabled="tracerouteData.loading">
+                    <span x-show="!tracerouteData.loading">Run Traceroute</span>
+                    <span x-show="tracerouteData.loading">Running...</span>
+                </button>
+            </div>
+            
+            <div x-show="tracerouteData.results" class="mt-4">
+                <h3 class="font-semibold mb-2">Results:</h3>
+                <pre class="bg-gray-100 p-4 rounded-md whitespace-pre-wrap font-mono text-sm" x-text="tracerouteData.results"></pre>
+            </div>
+        </div>
+        
+        <!-- DNS Lookup Tool -->
+        <div x-show="activeTool === 'nslookup'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label" for="nslookupHost">Hostname or IP Address</label>
+                    <input type="text" id="nslookupHost" x-model="nslookupData.host" class="input" placeholder="example.com or 8.8.8.8">
+                </div>
+                <div>
+                    <label class="label" for="nslookupType">Record Type</label>
+                    <select id="nslookupType" x-model="nslookupData.type" class="input">
+                        <option value="A">A (Address)</option>
+                        <option value="AAAA">AAAA (IPv6 Address)</option>
+                        <option value="MX">MX (Mail Exchange)</option>
+                        <option value="NS">NS (Name Server)</option>
+                        <option value="TXT">TXT (Text)</option>
+                        <option value="CNAME">CNAME (Canonical Name)</option>
+                        <option value="SOA">SOA (Start of Authority)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label" for="nslookupServer">DNS Server (Optional)</label>
+                    <input type="text" id="nslookupServer" x-model="nslookupData.server" class="input" placeholder="8.8.8.8">
+                    <p class="text-sm text-gray-500 mt-1">Leave empty to use system default</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button 
+                    @click="runNslookup" 
+                    class="btn" 
+                    :disabled="nslookupData.loading">
+                    <span x-show="!nslookupData.loading">Run DNS Lookup</span>
+                    <span x-show="nslookupData.loading">Running...</span>
+                </button>
+            </div>
+            
+            <div x-show="nslookupData.results" class="mt-4">
+                <h3 class="font-semibold mb-2">Results:</h3>
+                <pre class="bg-gray-100 p-4 rounded-md whitespace-pre-wrap font-mono text-sm" x-text="nslookupData.results"></pre>
+            </div>
+        </div>
+        
+        <!-- Port Scan Tool -->
+        <div x-show="activeTool === 'portscan'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label" for="portScanHost">Hostname or IP Address</label>
+                    <input type="text" id="portScanHost" x-model="portScanData.host" class="input" placeholder="example.com or 192.168.1.1">
+                </div>
+                <div>
+                    <label class="label" for="portScanPorts">Ports to Scan</label>
+                    <input type="text" id="portScanPorts" x-model="portScanData.ports" class="input" placeholder="80,443,22,25">
+                    <p class="text-sm text-gray-500 mt-1">Comma-separated list of ports</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button 
+                    @click="runPortScan" 
+                    class="btn" 
+                    :disabled="portScanData.loading">
+                    <span x-show="!portScanData.loading">Run Port Scan</span>
+                    <span x-show="portScanData.loading">Running...</span>
+                </button>
+            </div>
+            
+            <div x-show="portScanData.results" class="mt-4">
+                <h3 class="font-semibold mb-2">Results:</h3>
+                <pre class="bg-gray-100 p-4 rounded-md whitespace-pre-wrap font-mono text-sm" x-text="portScanData.results"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2 class="text-xl font-semibold mb-4">System Tools</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                <h3 class="text-lg font-medium mb-2">System Status</h3>
+                <p class="text-gray-600 mb-4">View CPU, memory, and disk usage information</p>
+                <button class="btn-secondary w-full">Open</button>
+            </div>
+            
+            <div class="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                <h3 class="text-lg font-medium mb-2">Network Status</h3>
+                <p class="text-gray-600 mb-4">View network interface statistics and throughput</p>
+                <button class="btn-secondary w-full">Open</button>
+            </div>
+            
+            <div class="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                <h3 class="text-lg font-medium mb-2">Process Manager</h3>
+                <p class="text-gray-600 mb-4">View and manage running system processes</p>
+                <button class="btn-secondary w-full">Open</button>
+            </div>
+            
+            <div class="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                <h3 class="text-lg font-medium mb-2">File Explorer</h3>
+                <p class="text-gray-600 mb-4">Browse and manage files on the system</p>
+                <button class="btn-secondary w-full">Open</button>
+            </div>
+            
+            <div class="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                <h3 class="text-lg font-medium mb-2">Terminal</h3>
+                <p class="text-gray-600 mb-4">Access command line interface</p>
+                <button class="btn-secondary w-full">Open</button>
+            </div>
+            
+            <div class="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                <h3 class="text-lg font-medium mb-2">Service Manager</h3>
+                <p class="text-gray-600 mb-4">View and control system services</p>
+                <button class="btn-secondary w-full">Open</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
