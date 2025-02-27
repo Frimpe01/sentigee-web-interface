@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}System Configuration{% endblock %}
+
+{% block content %}
+<div x-data="{
+    ipSettings: {
+        dhcp: true,
+        ipAddress: '',
+        subnetMask: '',
+        gateway: '',
+        dnsServers: '',
+        hostname: 'sentigee',
+        dnsSuffix: ''
+    },
+    nicInfo: {
+        model: 'Loading...',
+        interface: 'Loading...',
+        macAddress: 'Loading...',
+        currentIp: 'Loading...',
+        currentSubnet: 'Loading...',
+        currentGateway: 'Loading...',
+        currentDns: 'Loading...'
+    },
+    ntpServers: ['pool.ntp.org'],
+    currentTime: new Date().toLocaleString(),
+    selectedTimezone: 'UTC',
+    timezones: [
+        'UTC',
+        'America/New_York',
+        'America/Chicago',
+        'America/Denver',
+        'America/Los_Angeles',
+        'Europe/London',
+        'Europe/Paris',
+        'Asia/Tokyo',
+        'Australia/Sydney'
+    ],
+    overrideFailsafe: false,
+    connectionStatus: {
+        status: 'connected',
+        message: 'Internet connection available'
+    },
+    loading: true,
+    
+    init() {
+        this.fetchNetworkInfo();
+        this.fetchTimeInfo();
+        // Update current time every second
+        setInterval(() => {
+            this.currentTime = new Date().toLocaleString();
+        }, 1000);
+    },
+    
+    fetchNetworkInfo() {
+        this.loading = true;
+        // Mocked for now - would fetch from backend in real implementation
+        setTimeout(() => {
+            this.nicInfo = {
+                model: 'Realtek RTL8211F Gigabit Ethernet',
+                interface: 'eth0',
+                macAddress: '00:1B:21:99:AA:DD',
+                currentIp: '10.0.7.194',
+                currentSubnet: '255.255.255.0',
+                currentGateway: '10.0.7.1',
+                currentDns: '10.0.7.1, 8.8.8.8'
+            };
+            this.ipSettings.ipAddress = this.nicInfo.currentIp;
+            this.ipSettings.subnetMask = this.nicInfo.currentSubnet;
+            this.ipSettings.gateway = this.nicInfo.currentGateway;
+            this.ipSettings.dnsServers = this.nicInfo.currentDns;
+            this.loading = false;
+        }, 500);
+    },
+    
+    fetchTimeInfo() {
+        // Mocked for now - would fetch from backend in real implementation
+        setTimeout(() => {
+            this.selectedTimezone = 'America/New_York';
+        }, 500);
+    },
+    
+    saveNetworkSettings() {
+        if (!this.validateIpSettings()) {
+            return;
+        }
+        
+        if (!this.ipSettings.dhcp && !this.overrideFailsafe) {
+            if (!confirm('Warning: You are changing network settings without failsafe. If you lose connection, the system will not revert automatically. Continue?')) {
+                return;
+            }
+        }
+        
+        // In a real implementation, this would send the IP settings to the backend
+        alert('Network settings saved. If you changed the IP address, you will need to reconnect to the new address.');
+    },
+    
+    validateIpSettings() {
+        if (!this.ipSettings.dhcp) {
+            // Basic IP validation
+            const ipRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            
+            if (!ipRegex.test(this.ipSettings.ipAddress)) {
+                alert('Invalid IP address format');
+                return false;
+            }
+            
+            if (!ipRegex.test(this.ipSettings.subnetMask)) {
+                alert('Invalid subnet mask format');
+                return false;
+            }
+            
+            if (!ipRegex.test(this.ipSettings.gateway)) {
+                alert('Invalid gateway format');
+                return false;
+            }
+        }
+        
+        return true;
+    },
+    
+    addNtpServer() {
+        this.ntpServers.push('');
+    },
+    
+    removeNtpServer(index) {
+        this.ntpServers.splice(index, 1);
+    },
+    
+    syncTimeNow() {
+        // In a real implementation, this would send a request to sync time
+        alert('System time synchronized with NTP server.');
+    },
+    
+    saveTimezoneSettings() {
+        // In a real implementation, this would send the timezone settings to the backend
+        alert('Timezone settings saved.');
+    }
+}">
+    <h1 class="text-2xl font-bold mb-6">System Configuration</h1>
+    
+    <!-- Connection Status -->
+    <div class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">Connection Status</h2>
+        
+        <div class="flex items-center">
+            <span :class="connectionStatus.status === 'connected' ? 'badge-success' : 'badge-error'" 
+                  x-text="connectionStatus.status === 'connected' ? 'Connected' : 'Disconnected'"></span>
+            <span class="ml-2" x-text="connectionStatus.message"></span>
+        </div>
+    </div>
+    
+    <!-- WAN Connection Settings -->
+    <div class="card mb-6">
+        <h2 class="text-xl font-semibold mb-4">WAN Connection Settings</h2>
+        
+        <div x-show="loading" class="text-center py-4">
+            <span class="text-gray-500">Loading network information...</span>
+        </div>
+        
+        <div x-show="!loading">
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Network Interface Information</h3>
+                    <table class="w-full">
+                        <tr>
+                            <td class="py-1 font-semibold">Interface:</td>
+                            <td x-text="nicInfo.interface"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-semibold">Model:</td>
+                            <td x-text="nicInfo.model"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-semibold">MAC Address:</td>
+                            <td x-text="nicInfo.macAddress"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-semibold">Current IP:</td>
+                            <td x-text="nicInfo.currentIp"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-semibold">Subnet Mask:</td>
+                            <td x-text="nicInfo.currentSubnet"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-semibold">Gateway:</td>
+                            <td x-text="nicInfo.currentGateway"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-semibold">DNS Servers:</td>
+                            <td x-text="nicInfo.currentDns"></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium mb-2">IP Configuration</h3>
+                    <form @submit.prevent="saveNetworkSettings">
+                        <div class="mb-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="ipSettings.dhcp" class="mr-2">
+                                <span>Use DHCP</span>
+                            </label>
+                        </div>
+                        
+                        <div x-show="!ipSettings.dhcp" class="space-y-3">
+                            <div>
+                                <label class="label" for="ipAddress">IP Address</label>
+                                <input type="text" id="ipAddress" x-model="ipSettings.ipAddress" class="input" :disabled="ipSettings.dhcp" placeholder="192.168.1.200">
+                            </div>
+                            
+                            <div>
+                                <label class="label" for="subnetMask">Subnet Mask</label>
+                                <input type="text" id="subnetMask" x-model="ipSettings.subnetMask" class="input" :disabled="ipSettings.dhcp" placeholder="255.255.255.0">
+                            </div>
+                            
+                            <div>
+                                <label class="label" for="gateway">Gateway</label>
+                                <input type="text" id="gateway" x-model="ipSettings.gateway" class="input" :disabled="ipSettings.dhcp" placeholder="192.168.1.1">
+                            </div>
+                            
+                            <div>
+                                <label class="label" for="dnsServers">DNS Servers</label>
+                                <input type="text" id="dnsServers" x-model="ipSettings.dnsServers" class="input" :disabled="ipSettings.dhcp" placeholder="8.8.8.8, 8.8.4.4">
+                                <p class="text-sm text-gray-500 mt-1">Separate multiple DNS servers with commas</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="label" for="hostname">Hostname</label>
+                            <input type="text" id="hostname" x-model="ipSettings.hostname" class="input" placeholder="sentigee">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="label" for="dnsSuffix">DNS Suffix</label>
+                            <input type="text" id="dnsSuffix" x-model="ipSettings.dnsSuffix" class="input" placeholder="local">
+                            <p class="text-sm text-gray-500 mt-1">Leave empty to use network default</p>
+                        </div>
+                        
+                        <div class="mb-4" x-show="!ipSettings.dhcp">
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="overrideFailsafe" class="mr-2">
+                                <span>Override failsafe (changes won't revert on connection failure)</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn">Save Network Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Time Settings -->
+    <div class="card">
+        <h2 class="text-xl font-semibold mb-4">Time Configuration</h2>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+            <div>
+                <h3 class="text-lg font-medium mb-2">Current System Time</h3>
+                <div class="text-2xl font-mono p-4 bg-gray-100 rounded-lg mb-4" x-text="currentTime"></div>
+                
+                <form @submit.prevent="saveTimezoneSettings">
+                    <div class="mb-4">
+                        <label class="label" for="timezone">Timezone</label>
+                        <select id="timezone" x-model="selectedTimezone" class="input">
+                            <template x-for="tz in timezones" :key="tz">
+                                <option :value="tz" x-text="tz"></option>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="btn">Save Timezone</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium mb-2">NTP Configuration</h3>
+                <form @submit.prevent>
+                    <div class="mb-4">
+                        <label class="label">NTP Servers</label>
+                        <template x-for="(server, index) in ntpServers" :key="index">
+                            <div class="flex mb-2">
+                                <input type="text" x-model="ntpServers[index]" class="input mr-2">
+                                <button type="button" @click="removeNtpServer(index)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200" :disabled="ntpServers.length <= 1">
+                                    Remove
+                                </button>
+                            </div>
+                        </template>
+                        
+                        <div x-show="ntpServers.length < 7" class="mt-2">
+                            <button type="button" @click="addNtpServer" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200">
+                                Add NTP Server
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2">
+                            <span>Enable Periodic Time Sync</span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="button" @click="syncTimeNow" class="btn-secondary mr-2">Sync Time Now</button>
+                        <button type="submit" class="btn">Save NTP Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
